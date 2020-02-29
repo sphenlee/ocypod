@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use std::path::PathBuf;
 
-use self::futures::Future;
+use futures::compat::Future01CompatExt;
 
 use redis::RedisError;
 
@@ -157,19 +157,19 @@ impl TestContext {
         self.client.get_connection().unwrap()
     }
 
-    pub fn async_connection(
+    pub async fn async_connection(
         &self,
-    ) -> impl Future<Item = redis::r#async::Connection, Error = RedisError> {
-        self.client.get_async_connection()
+    ) -> Result<redis::r#async::Connection, RedisError> {
+        self.client.get_async_connection().compat().await
     }
 
     pub fn stop_server(&mut self) {
         self.server.stop();
     }
 
-    pub fn shared_async_connection(
+    pub async fn shared_async_connection(
         &self,
-    ) -> impl Future<Item = redis::r#async::SharedConnection, Error = RedisError> {
-        self.client.get_shared_async_connection()
+    ) -> Result<redis::r#async::SharedConnection, RedisError> {
+        self.client.get_shared_async_connection().compat().await
     }
 }

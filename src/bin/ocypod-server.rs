@@ -81,41 +81,41 @@ fn main() -> std::io::Result<()> {
                     .service(web::resource("/version").to(handlers::info::version))
 
                     // get summary of system/queue information
-                    .service(web::resource("").to_async(handlers::info::index))
+                    .service(web::resource("").to(handlers::info::index))
             )
 
             // run basic health check by pinging Redis
-            .service(web::resource("/health").to_async(handlers::health::index))
+            .service(web::resource("/health").to(handlers::health::index))
 
             // get list of job IDs for a given tag
             .service(
                 web::resource("/tag/{name}")
-                    .route(web::get().to_async(handlers::tag::tagged_jobs)))
+                    .route(web::get().to(handlers::tag::tagged_jobs)))
 
             .service(
                 web::scope("/job")
                     // get the current status of a job with given ID
-                    .service(web::resource("/{id}/status").route(web::get().to_async(handlers::job::status)))
+                    .service(web::resource("/{id}/status").route(web::get().to(handlers::job::status)))
 
                     .service(
                         web::resource("/{id}/output")
-                            .route(web::get().to_async(handlers::job::output))
-                            .route(web::put().to_async(handlers::job::set_output))
+                            .route(web::get().to(handlers::job::output))
+                            .route(web::put().to(handlers::job::set_output))
                     )
 
                     // update job's last heartbeat date/time
-                    .service(web::resource("/{id}/heartbeat").route(web::put().to_async(handlers::job::heartbeat)))
+                    .service(web::resource("/{id}/heartbeat").route(web::put().to(handlers::job::heartbeat)))
 
                     .service(
                         web::resource("/{id}")
                             // get all metadata about a single job with given ID
-                            .route(web::get().to_async(handlers::job::index))
+                            .route(web::get().to(handlers::job::index))
 
                             // update one of more fields (including status) of given job
-                            .route(web::patch().to_async(handlers::job::update))
+                            .route(web::patch().to(handlers::job::update))
 
                             // delete a job from the queue DB
-                            .route(web::delete().to_async(handlers::job::delete))
+                            .route(web::delete().to(handlers::job::delete))
                     )
             )
 
@@ -123,33 +123,33 @@ fn main() -> std::io::Result<()> {
                 web::scope("/queue")
 
                     // job IDs by state
-                    .service(web::resource("/{name}/job_ids").route(web::get().to_async(handlers::queue::job_ids)))
+                    .service(web::resource("/{name}/job_ids").route(web::get().to(handlers::queue::job_ids)))
 
                     .service(
                         web::resource("/{name}/job")
                             // get the next job to work on from given queue
-                            .route(web::get().to_async(handlers::queue::next_job))
+                            .route(web::get().to(handlers::queue::next_job))
 
                             // create a new job on given queue
-                            .route(web::post().to_async(handlers::queue::create_job))
+                            .route(web::post().to(handlers::queue::create_job))
                     )
 
                     // get queue size
-                    .service(web::resource("/{name}/size").route(web::get().to_async(handlers::queue::size)))
+                    .service(web::resource("/{name}/size").route(web::get().to(handlers::queue::size)))
 
                     .service(
                         web::resource("/{name}")
-                            .route(web::get().to_async(handlers::queue::settings))
+                            .route(web::get().to(handlers::queue::settings))
 
                             // create a new queue, or update an existing one with given settings
-                            .route(web::put().to_async(handlers::queue::create_or_update))
+                            .route(web::put().to(handlers::queue::create_or_update))
 
                             // delete a queue and all currently queued jobs on it
-                            .route(web::delete().to_async(handlers::queue::delete))
+                            .route(web::delete().to(handlers::queue::delete))
                     )
 
                     // get a list of all queue names
-                    .service(web::resource("").to_async(handlers::queue::index))
+                    .service(web::resource("").to(handlers::queue::index))
             )
     });
 
@@ -169,7 +169,7 @@ fn main() -> std::io::Result<()> {
 
     http_server.bind(&http_server_addr)
         .unwrap_or_else(|_| panic!("Failed to bind to: {}", &http_server_addr))
-        .start();
+        .run();
     system.run()
 }
 

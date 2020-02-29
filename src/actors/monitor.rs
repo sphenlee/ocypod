@@ -32,7 +32,7 @@ impl Actor for MonitorActor {
         ctx.run_interval(Duration::from_secs(self.timeout_check_interval_secs), |monitor, _ctx| {
             let fut = monitor.redis_addr.send(CheckJobTimeouts);
             Arbiter::spawn(async move {
-                fut.await.map(|res| {
+                let _ = fut.await.map(|res| {
                     if let Err(err) = res {
                         error!("Job timeout monitoring failed: {}", err);
                     };
@@ -45,7 +45,7 @@ impl Actor for MonitorActor {
         ctx.run_interval(Duration::from_secs(self.expiry_check_interval_secs), |monitor, _ctx| {
             let fut = monitor.redis_addr.send(CheckJobExpiry);
             Arbiter::spawn(async move {
-                fut.await.map(|res| {
+                let _ = fut.await.map(|res| {
                     if let Err(err) = res {
                         error!("Job expiry monitoring failed: {}", err);
                     };
@@ -59,7 +59,7 @@ impl Actor for MonitorActor {
         ctx.run_interval(Duration::from_secs(self.retry_check_interval_secs), |monitor, _ctx| {
             let fut = monitor.redis_addr.send(CheckJobRetries);
             Arbiter::spawn(async move {
-                fut.await.map(|res| {
+                let _ = fut.await.map(|res| {
                     if let Err(err) = res {
                         error!("Job retry monitoring failed: {}", err);
                     };
