@@ -1,6 +1,5 @@
 //! HTTP handlers for the `/health` endpoint.
 
-use futures::Future;
 use actix_web::{self, HttpResponse};
 use actix_web::web::Data;
 use serde_derive::*;
@@ -35,17 +34,16 @@ impl Health {
 }
 
 /// Handle `GET /health` requests to get a JSON list of all existing queues.
-pub fn index(data: Data<ApplicationState>) -> impl Future<Item=HttpResponse, Error=()> {
-    data.redis_addr.send(application::CheckHealth)
-        .then(|res| {
-            match res {
-                Ok(_)    => Ok(HttpResponse::Ok().json(Health::new_healthy())),
-                Err(err) => {
-                    error!("Health check failed: {}", err);
-                    Ok(HttpResponse::Ok().json(Health::new_from_error(err.to_string())))
-                },
-            }
-        })
+pub async fn index(data: Data<ApplicationState>) -> HttpResponse {
+    let res = data.redis_addr.send(application::CheckHealth).await;
+
+    match res {
+        Ok(_)    => HttpResponse::Ok().json(Health::new_healthy()),
+        Err(err) => {
+            error!("Health check failed: {}", err);
+            HttpResponse::Ok().json(Health::new_from_error(err.to_string()))
+        },
+    }
 }
 
 #[cfg(test)]

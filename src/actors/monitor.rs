@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use log::{info, error};
 use actix::prelude::{Actor, Addr, Arbiter, AsyncContext, Context};
-use futures::Future;
 
 use crate::config::ServerConfig;
 use super::application::{ApplicationActor, CheckJobTimeouts, CheckJobExpiry, CheckJobRetries};
@@ -31,49 +30,42 @@ impl Actor for MonitorActor {
         // checks to see if any running jobs have timed out
         info!("Checking job timeouts every {}s", self.timeout_check_interval_secs);
         ctx.run_interval(Duration::from_secs(self.timeout_check_interval_secs), |monitor, _ctx| {
-            let res = monitor.redis_addr.send(CheckJobTimeouts);
-
-            Arbiter::spawn(
-                res
-                    .map(|res| {
-                        if let Err(err) = res {
-                            error!("Job timeout monitoring failed: {}", err);
-                        };
-                    })
-                    .map_err(|e| error!("Sending timeout check message failed: {}", e))
-            );
+            let fut = monitor.redis_addr.send(CheckJobTimeouts);
+            Arbiter::spawn(async move {
+                fut.await.map(|res| {
+                    if let Err(err) = res {
+                        error!("Job timeout monitoring failed: {}", err);
+                    };
+                }).map_err(|e| error!("Sending timeout check message failed: {}", e));
+            });
         });
 
         // checks to see if any ended jobs need removing from Redis
         info!("Checking job expiry every {}s", self.expiry_check_interval_secs);
         ctx.run_interval(Duration::from_secs(self.expiry_check_interval_secs), |monitor, _ctx| {
-            let res = monitor.redis_addr.send(CheckJobExpiry);
-
-            Arbiter::spawn(
-                res
-                    .map(|res| {
-                        if let Err(err) = res {
-                            error!("Job expiry monitoring failed: {}", err);
-                        };
-                    })
-                    .map_err(|e| error!("Sending expiry check message failed: {}", e))
-            );
+            let fut = monitor.redis_addr.send(CheckJobExpiry);
+            Arbiter::spawn(async move {
+                fut.await.map(|res| {
+                    if let Err(err) = res {
+                        error!("Job expiry monitoring failed: {}", err);
+                    };
+                })
+                    .map_err(|e| error!("Sending expiry check message failed: {}", e));
+            });
         });
 
         // checks to see if any failed jobs need re-queuing
         info!("Checking job retries every {}s", self.retry_check_interval_secs);
         ctx.run_interval(Duration::from_secs(self.retry_check_interval_secs), |monitor, _ctx| {
-            let res = monitor.redis_addr.send(CheckJobRetries);
-
-            Arbiter::spawn(
-                res
-                    .map(|res| {
-                        if let Err(err) = res {
-                            error!("Job retry monitoring failed: {}", err);
-                        };
-                    })
-                    .map_err(|e| error!("Sending retry check message failed: {}", e))
-            );
+            let fut = monitor.redis_addr.send(CheckJobRetries);
+            Arbiter::spawn(async move {
+                fut.await.map(|res| {
+                    if let Err(err) = res {
+                        error!("Job retry monitoring failed: {}", err);
+                    };
+                })
+                    .map_err(|e| error!("Sending retry check message failed: {}", e));
+            });
         });
 
 //        // use during development only, checks for any inconsistency in Redis data structures
